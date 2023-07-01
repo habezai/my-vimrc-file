@@ -36,58 +36,27 @@ endfunction
 function! s:RunVimwiki() abort
     execute "w"
     execute ":VimwikiAll2HTML"
+    let l:curPath=expand("%:p:h")
+    let l:newPath=l:curPath.'_html'
+    call chdir(l:newPath)
+
+    if filereadable(expand("%:r") . ".vim") 
+        execute 'source ' . expand("%:r") . ".vim" 
+    elseif filereadable(expand("index") . ".vim") 
+        execute 'source ' . expand("index") . ".vim" 
+    endif
+
+    " 进入编辑，利用autocmd来修改这个html
+    " execute 'edit '.l:newPath.'\'.expand("%:t:r").'.html'
 endfunction
 
 function! s:RunDosBatch() abort
     execute "w"
     execute g:leader_e_run_prefix."%"
 endfunction
-"}}}
 
 "}}}
 
-" < 编译运行：<leader>e快捷运行---Winows/Linux都行 > {{{
-" -----------------------------------------------------------------------------
-function! g:CompileRunGcc() abort
-    let g:leader_e_actions = {
-                \ 'c': function('s:RunC'),
-                \ 'cpp': function('s:RunCpp'),
-                \ 'sh': function('s:RunShell'),
-                \ 'python': function('s:RunPython'),
-                \ 'vimwiki': function('s:RunVimwiki'),
-                \ 'dosbatch': function('s:RunDosBatch'),
-                \ }
-    " get(list,key,default_value)在list内基于name来查找value，如果没找到则使用default_value
-    let l:Action = get(g:leader_e_actions, &filetype,function('s:EchoTypeNotCorrect'))
-
-    " 若是vimrc就不做任何事
-    if &filetype == 'vim'
-        call s:EchoTypeNotCorrect()
-        return
-    endif
-
-    if exists('g:asyncrun_mode')
-        let g:leader_e_run_prefix=":AsyncRun -mode=term -pos=right -col=50 "
-    else
-        let g:leader_e_run_prefix="! "
-    endif
-
-    call l:Action()
-endfunction
-"}}}
-"  < 判断操作系统是否是 Windows 还是 Linux >  {{{
-" -----------------------------------------------------------------------------
-let g:isWindows = 0
-let g:isLinux = 0
-if(has("win32") || has("win64") || has("win95") || has("win16"))
-    let g:isWindows = 1
-else
-    let g:isLinux = 1
-endif
-"}}}
-" < Linux 专用设置 >  {{{
-" -----------------------------------------------------------------------------
-"
 "}}}
 
 "  < 判断是终端还是 Gvim > {{{
@@ -112,21 +81,72 @@ if(g:isGUI)
     endfunction
     "Gvim行距 linespace
     set linespace=4
-    "设置配色方案，在~/.vim/colors/目录下提前放置molokai.vim.至于gvim我喜欢motus, ubuntu的vim我喜欢default,molokai，vsvim我喜欢web13234.vssettings
-    colorscheme motus
+    if !exists("g:myflag_colorscheme")
+        " 在这里编写您希望只使用一次的配置
+        colorscheme motus
+        " 将变量 myflag_colorscheme 设置为已存在，避免重复执行
+        let g:myflag_colorscheme = 1
+    endif
     "BufNewFile创建新的txt文件的时候， BufReadPost打开已有txt文件之后
     autocmd BufNewFile,BufReadPost *.txt setlocal linespace=10
     autocmd BufLeave *.txt setlocal linespace=4
-    "弄好Gvim菜单栏的中文乱码
-    "autocmd VimEnter * source $VIMRUNTIME/lang/menu_zh_cn.utf-8.vim
-    "set guioptions-=T "去掉工具栏
-    "set guioptions-=m "去掉菜单栏
     set guifont=Cr.DejaVuSansMono.YaHei:h13
 else
     "终端vim下的配置
-    colorscheme monokai "设置配色方案，在~/.vim/colors/目录下提前放置molokai.vim.至于gvim我喜欢motus, ubuntu的vim我喜欢default,molokai，vsvim我喜欢web13234.vssettings
+    " 判断变量 myflag 是否存在
+    if !exists("g:myflag_colorscheme")
+        " 在这里编写您希望只使用一次的配置
+        colorscheme monokai "设置配色方案，在~/.vim/colors/目录下提前放置molokai.vim
+        " 将变量 myflag_colorscheme 设置为已存在，避免重复执行
+        let g:myflag_colorscheme = 1
+    endif
 endif
 "}}}
+"  < 判断操作系统是否是 Windows 还是 Linux >  {{{
+" -----------------------------------------------------------------------------
+let g:isWindows = 0
+let g:isLinux = 0
+if(has("win32") || has("win64") || has("win95") || has("win16"))
+    let g:isWindows = 1
+else
+    let g:isLinux = 1
+endif
+"}}}
+" < Linux 专用设置 >  {{{
+" -----------------------------------------------------------------------------
+"
+"}}}
+" < 编译运行：<leader>e快捷运行---Winows/Linux都行 > {{{
+" -----------------------------------------------------------------------------
+function! g:CompileRunGcc() abort
+    "fucntion('name')把字符串变成函数指针
+    let g:leader_e_actions = {
+                \ 'c': function('s:RunC'),
+                \ 'cpp': function('s:RunCpp'),
+                \ 'sh': function('s:RunShell'),
+                \ 'python': function('s:RunPython'),
+                \ 'vimwiki': function('s:RunVimwiki'),
+                \ 'dosbatch': function('s:RunDosBatch'),
+                \ }
+    " get(list,key,default_value)在list内基于keyname来查找value，如果没找到则使用default_value
+    let l:Action = get(g:leader_e_actions, &filetype,function('s:EchoTypeNotCorrect'))
+
+    " 若是vimrc就不做任何事
+    if &filetype == 'vim'
+        call s:EchoTypeNotCorrect()
+        return
+    endif
+
+    if exists('g:asyncrun_mode')
+        let g:leader_e_run_prefix=":AsyncRun -mode=term -pos=right -col=50 "
+    else
+        let g:leader_e_run_prefix="! "
+    endif
+
+    call l:Action()
+endfunction
+"}}}
+
 
 "-------------------以下与gvim和vim无关----------------------------------------
 " 目前我的vim个人配置文件
@@ -135,6 +155,8 @@ endif
 " 映射 和 设置
 " < Mappings映射(map) > {{{
 " -----------------------------------------------------------------------------
+" Backspace改为轮换缓冲区
+nnoremap <Backspace> :b#<CR>
 " jj映射esc
 inoremap jj <esc>
 " 热键Leader定为'分号'。
@@ -223,8 +245,8 @@ nnoremap <Leader><Down>  :resize -5<CR>
 nnoremap <Leader><Right> :vertical resize +5<CR>
 nnoremap <Leader><Left>  :vertical resize -5<CR>
 
-"指定 F2 键来打开Tlist或者关闭
-nnoremap <silent><F2> :Tlist<CR>    
+"指定 F2 键来打开Vista或者关闭
+nnoremap <silent><F2> :Vista!!<CR>    
 " 标签页导航 按键映射。silent 命令（sil[ent][!] {command}）用于安静地执行命令，既不显示正常的消息，也不会把它加进消息历史
 nnoremap <Leader>1 1gt
 nnoremap <Leader>2 2gt
@@ -250,7 +272,7 @@ if(g:isWindows)
     let pyVersionId = split(str,'\.')[1]
     if pyVersionId == 9
         set pythonthreedll=python39.dll
-    elseif pyVersionId == 10
+    elseif pyVersionId == 10 
         set pythonthreedll=python310.dll
     elseif pyVersionId == 11
         set pythonthreedll=python311.dll
@@ -258,13 +280,19 @@ if(g:isWindows)
     " 这是一种 set 选项为变量的方法
     execute 'set pythondll=' . &pythonthreedll
 
-    "另一种方式:教研室电脑,依据电脑的主机名特殊设置
+
+    "另一种方式:依据电脑的主机名特殊设置
     if system("hostname")== "DESKTOP-I5R6VBM\n"
+        "教研室电脑
         set pythonthreedll=python311.dll
+    elseif system("hostname")== "LAPTOP-QDEH3S4H\n"
+        "笔记本电脑
+        set pythonthreedll=python39.dll
     endif
 endif
 "encoding=utf-8 指的是文件翻译成utf-8再呈现在gvim界面。
-"encoding=utf-8 也意味着，你做的修改，gvim界面以utf-8的格式翻译成 "fileencoding的格式流入文件
+"encoding=utf-8 也意味着，你做的修改，gvim界面以utf-8的格式流入屏幕
+"以fileencoding的格式流入文件
 set encoding=utf-8
 set nocompatible  "去掉讨厌的有关vi兼容模式，避免以前版本的一些bug和局限
 set showcmd    "输入的命令显示出来，看的清楚些"
@@ -347,7 +375,7 @@ set statusline+=\ [filetype=%y] "文件的类型
 set statusline+=\ %{\"[fileenc=\".(&fenc==\"\"?&enc:&fenc).((exists(\"+bomb\")\ &&\ &bomb)?\"+\":\"\").\"]\"}
 set statusline+=\ [ff=%{&ff}] "fileformat
 set statusline+=\ [ASCII=%3.3b=0x%2.2B] "ASCII 的decimal 和 hex
-set statusline+=\ [pos=%4l,%3v][%p%%] "position
+set statusline+=\ [pos=%4l行,%3v列][%p%%] "position
 set statusline+=\ [%L\ lines] "total num of lines
 " }}}
 " < abbreviate缩写替换 > {{{
@@ -370,18 +398,23 @@ inoreabbrev @z //@hyf
 inoreabbrev z@ //fyh@
 inoreabbrev ccopy Copyright 2021 Yufeng Huang, all rights reserved.
 "选中当前单词，两边添加双引号
-nnoremap <leader>" viw<esc>a"<esc>hbi"<esc>lel
-nnoremap <localleader>"  viW<esc>a"<esc>hBi"<esc>E
-nnoremap <leader>' viw<esc>a'<esc>hbi'<esc>lel
-nnoremap <localleader>' viW<esc>a'<esc>hBi'<esc>E
-nnoremap <leader>> viw<esc>a><esc>hbi<<esc>lel
-nnoremap <localleader>> viW<esc>a><esc>hBi<<esc>E
-nnoremap <leader>] viw<esc>a]<esc>hbi[<esc>lel
-nnoremap <localleader>] viW<esc>a]<esc>hBi[<esc>E
-nnoremap <leader>) viw<esc>a)<esc>hbi(<esc>lel
-nnoremap <localleader>) viW<esc>a)<esc>hBi(<esc>E
-nnoremap <leader>} viw<esc>a}<esc>hbi{<esc>lel
-nnoremap <localleader>} viW<esc>a}<esc>hBi{<esc>E
+nnoremap <leader>"        ea"<esc>bi"<esc>
+nnoremap <localleader>"   Ea"<esc>Bi"<esc>
+
+nnoremap <leader>'        ea'<esc>bi'<esc>
+nnoremap <localleader>'   Ea'<esc>Bi'<esc>
+
+nnoremap <leader>]        ea]<esc>bi[<esc>
+nnoremap <localleader>]   Ea]<esc>Bi[<esc>
+
+nnoremap <leader>)        ea)<esc>bi(<esc>
+nnoremap <localleader>)   Ea)<esc>Bi(<esc>
+
+nnoremap <leader>}        ea}<esc>bi{<esc>
+nnoremap <localleader>}   Ea}<esc>Bi{<esc>
+
+nnoremap <leader>`        ea`<esc>bi`<esc>
+nnoremap <localleader>`   Ea`<esc>Bi`<esc>
 " }}}
 
 " 自动命令组
@@ -538,7 +571,7 @@ augroup c_cpp__
     endfunction
     autocmd FileType c,cpp call s:C_CppSettings()
 augroup END
-augroup python_
+augroup python__
     autocmd!
     autocmd FileType python inoreabbrev <buffer> iff if:<left>
     autocmd FileType python inoreabbrev <buffer> else else:
@@ -562,6 +595,10 @@ augroup javascript__
         setlocal foldmethod=marker | setlocal foldmarker=//<,//>
     endfunction
     autocmd FileType javascript call s:JsSettings()
+augroup END
+augroup html__
+  autocmd!
+  autocmd BufReadPost *.html  if filereadable(expand("%:r") . ".vim") | execute 'source ' . expand("%:r") . ".vim" | elseif filereadable(expand("index") . ".vim") | execute 'source ' . expand("index") . ".vim" | endif
 augroup END
 augroup shell_
     autocmd!
@@ -595,24 +632,24 @@ augroup END
 " 特殊功能的函数
 " < 画图：画一个栈帧的内存模型 > {{{
 " -----------------------------------------------------------------------------
-function! g:DrawStack()                          "画一个示例
+function! g:DrawStack()                          "画一个示例  func(string x,string y) {...char aaa=1;char bbb=2;}
     call append(line("."),     "     rbp-0 _____________ ")
     call append(line(".")+1,   "          |             |")
     call append(line(".")+2,   "          |             |")
     call append(line(".")+3,   "          |             |")
     call append(line(".")+4,   "  rbp-0x08|_____________|")
     call append(line(".")+5,   "          |             |")
-    call append(line(".")+6,   "          | p指针:&xxx  |")
+    call append(line(".")+6,   "          |             |")
     call append(line(".")+7,   "          |             |")
     call append(line(".")+8,   "  rbp-0x10|_____________|")
     call append(line(".")+9,   "          |             |")
-    call append(line(".")+10,  "          | r的底层指针 |")
-    call append(line(".")+11,  "          |    :&xxx    |")
+    call append(line(".")+10,  "          |             |")
+    call append(line(".")+11,  "          |             |")
     call append(line(".")+12,  "  rbp-0x18|_____________|")
-    call append(line(".")+13,  "  rbp-0x19|____aaa:4____|")
-    call append(line(".")+14,  "  rbp-0x1a|____zzz:3____|")
-    call append(line(".")+15,  "  rbp-0x1b|____yyy:2____|")
-    call append(line(".")+16,  "  rbp-0x1c|____xxx:1____|")
+    call append(line(".")+13,  "  rbp-0x19|_local aaa:1_|")
+    call append(line(".")+14,  "  rbp-0x1a|_local bbb:2_|")
+    call append(line(".")+15,  "  rbp-0x1b|_par x(非基type) |")
+    call append(line(".")+16,  "  rbp-0x1c|_par y(非基type) |")
 endfunction
 function! g:DrawStack2()                          "画一个均等大小的,空的格子们
     call append(line("."),     "     rbp-0 _____________ ")
@@ -773,30 +810,20 @@ if(g:isWindows)
 else
     call plug#begin('~/.vim/plugged') "这里规定安装目录,中间各行代表获取的插件
 endif
-"vim-cpp-enhanced-highlight高亮 类，成员函数，标准库和模板
-Plug 'octol/vim-cpp-enhanced-highlight'
-"NERDTree
-Plug 'preservim/nerdtree'
-"objdump.vim  将后缀为.objdump的文件进行 语法高亮。
-Plug 'HE7086/objdump.vim'
+"NERDTree "放opt里了Plug 'preservim/nerdtree'
+"objdump.vim  将后缀为.objdump的文件进行 语法高亮。 "放opt里了Plug 'HE7086/objdump.vim'
 "Python PEP8规范自动格式化插件
 Plug 'tell-k/vim-autopep8'
-"taglist 用于便捷查看各种tag : 函数名 变量名 宏定义 结构体名
-Plug 'yegappan/taglist'
-"ale动态检查语法
-Plug 'dense-analysis/ale'
-"可以在vim 中 把光标快速移动 到你的可视区域
-Plug 'easymotion/vim-easymotion' "{{{
-"就是要nmap 而不能是 nnoremap 
-nmap ss <Plug>(easymotion-s2)  
-"}}}
-"括号自动补全
+"taglist 用于便捷查看各种tag : 函数名 变量名 宏定义 结构体名 "放opt里了Plug 'yegappan/taglist'
+"Vista相当于 高级版taglist 用于便捷查看各种 tag/LSP符号 : 函数名 变量名 宏定义 结构体名
+Plug 'liuchengxu/vista.vim'
+"ale动态检查语法 "放opt里了Plug 'dense-analysis/ale'
+"可以在vim 中 把光标快速移动 到你的可视区域 "放opt里了Plug 'easymotion/vim-easymotion' 
+"auto-pairs 括号自动补全
 Plug 'jiangmiao/auto-pairs'
 let g:AutoPairsMapCR = 0
-let g:AutoPairs = {'(':')','[':']', '{':'}','`':'`',"'":"'",'"':'"'}
-"let g:AutoPairs = {'[':']', '{':'}','`':'`',"'":"'",'"':'"'} "没管理小括号是因为要用echofunc脚本提示函数原型
-"tagbar用来在右侧展示 文件的整体结构视图
-Plug 'preservim/tagbar'
+let g:AutoPairs = {'(':')','[':']', '{':'}',"'":"'",'"':'"'}
+"tagbar用来在右侧展示 文件的整体结构视图 "放opt里了Plug 'preservim/tagbar'
 "indentLine添加一些分割线 比如你写python的时候 格式对齐 就可以通过这个分割线
 Plug 'Yggdroot/indentLine'
 let g:indentLine_fileType = ["c","cpp","python","html"]
@@ -816,6 +843,14 @@ vmap <silent> <Leader>t <Plug>TranslateWV
 "替换为翻译后的文字Replace the text with translation
 nmap <silent> <Leader>r <Plug>TranslateR
 vmap <silent> <Leader>r <Plug>TranslateRV
+"css的颜色直接渲染在文本上
+Plug 'ap/vim-css-color'
+"复制（yanked）的文本高亮一下
+Plug 'machakann/vim-highlightedyank'
+let g:highlightedyank_highlight_duration = 500 "设置为负一的话则是持续高亮"
+let g:highlightedyank_highlight_in_visual = 0 "可视模式下不搞这花里胡哨的
+" vim-clap 模糊搜索
+Plug 'liuchengxu/vim-clap', { 'do': ':Clap install-binary!' }
 "-----------------------------
 "    用于配合vim-lsp的插件
 Plug 'thomasfaingnaert/vim-lsp-ultisnips'
@@ -837,12 +872,13 @@ call plug#end()
 Plug 'vimwiki/vimwiki'
 set runtimepath+=~\vimfiles\plugged\vimwiki\
 let g:vimwiki_list = [
-            \ {'path': '~\vimwiki\my-personal-wiki\', 'css_name': 'main.css'},
-            \ {'path': '~\vimwiki\my-thesis\', 'css_name': 'style.css'}
+            \ {'path': '~\vimwiki\my-personal-wiki\', 'css_name': 'style.css'},
+            \ {'path': '~\vimwiki\my-thesis\', 'css_name': 'style.css'},
+            \ {'path': '~\vimwiki\cpp-programming-style-guidelines\', 'css_name': 'style.css'},
+            \ {'path': '~\vimwiki\cpp-annotation\', 'css_name': 'style.css'}
             \ ]
 autocmd FileType vimwiki setlocal shiftwidth=4 tabstop=4 noexpandtab
-" codeium 代码智能提示，Copilot 替代品
-"Plug 'Exafunction/codeium.vim'
+" codeium 代码智能提示，Copilot 替代品 "Plug 'Exafunction/codeium.vim'
 "----------------------------------------
 "状态 :PlugStatus 检查现在 plug 负责的插件状态
 "安装 :PlugInstall 将写入vimrc配置的插件进行安装
@@ -1063,7 +1099,8 @@ autocmd! CompleteDone * if pumvisible() == 0 | pclose | endif
 " -----------------------------------------------------------------------------
 " call lsp#enable()
 " call lsp#disable()
-"
+"虚文本的领头标记
+let g:lsp_diagnostics_virtual_text_prefix = " ‣ "
 "语法诊断 自动开启选项
 let g:lsp_diagnostics_enabled = 1
 "教研室电脑先不开启这个 lsp语法错误着色的功能
@@ -1088,7 +1125,8 @@ if g:lsp_diagnostics_enabled == 1
     "    建议标记符号
     let g:lsp_diagnostics_signs_hint = {'text': 'ad'}
 endif
-"(嵌入) 详细的代码提示信息,默认绿底红字
+"(嵌入) 详细的代码提示信息,默认绿底红字。（主要是函数参数提示）
+"需要版本Vim 9.0以上
 let g:lsp_inlay_hints_enabled = 1
 
 "注册Python的LSP  (具体的Wiki见：https://github.com/prabirshrestha/vim-lsp/wiki/)
@@ -1235,7 +1273,7 @@ function! s:on_lsp_buffer_enabled() abort
     nmap <buffer> ]g <plug>(lsp-next-diagnostic)
     "    nmap <buffer> gi <plug>(lsp-implementation)
     "    nmap <buffer> gt <plug>(lsp-type-definition)
-    "K 召唤浮窗, 显示函数说明(其实就是注释)
+    "K 召唤浮窗, 显示函数说明/或者变量原型/函数原型
     nmap <buffer> K <plug>(lsp-hover)
     "浮窗中的翻页 往后4行
     nnoremap <buffer> <expr><c-f> lsp#scroll(+4)
@@ -1249,9 +1287,9 @@ function! s:on_lsp_buffer_enabled() abort
 endfunction
 
 augroup lsp_install
-    au!
+    autocmd!
     " 只在注册过server的语言中启用 call s:on_lsp_buffer_enabled()
-    autocmd User g:lsp_buffer_enabled call s:on_lsp_buffer_enabled()
+    autocmd User lsp_buffer_enabled call s:on_lsp_buffer_enabled()
 augroup END
 
 "}}}
@@ -1334,7 +1372,20 @@ let g:UltiSnipsJumpBackwardTrigger="<c-k>"
 "   highlight link 配色组汇总
 "{{{
 " -----------------------------------------------------------------------------
-highlight link LspErrorHighlight error
+"文本中的 引用高亮
+highlight lspReference ctermfg=red guifg=#000000 ctermbg=green guibg=Grey
+"文本中的错误高亮，不是左侧边栏的
+highlight link LspErrorHighlight Error
+highlight link LspErrorVirtualText Error
+"文本中的警告高亮，不是左侧边栏的
+highlight link LspWarningHighlight TODO
+highlight link LspWarningVirtualText TODO
+"文本中的inlay提示（函数参数）
+highlight lspInlayHintsParameter ctermfg=red guifg=#666666
+            \ ctermbg=green guibg=Black
+"文本中的inlay提示（类型）
+highlight lspInlayHintsType ctermfg=red guifg=#006666
+            \ ctermbg=green guibg=Black
 "}}}
 "
 augroup reload_vimrc_once
