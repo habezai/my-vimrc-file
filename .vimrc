@@ -878,7 +878,8 @@ let g:vimwiki_list = [
             \ {'path': '~\vimwiki\cpp-annotation\', 'css_name': 'style.css'}
             \ ]
 autocmd FileType vimwiki setlocal shiftwidth=4 tabstop=4 noexpandtab
-" codeium 代码智能提示，Copilot 替代品 "Plug 'Exafunction/codeium.vim'
+" codeium 代码智能提示，Copilot 替代品
+" Plug 'Exafunction/codeium.vim'
 "----------------------------------------
 "状态 :PlugStatus 检查现在 plug 负责的插件状态
 "安装 :PlugInstall 将写入vimrc配置的插件进行安装
