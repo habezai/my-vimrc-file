@@ -1440,6 +1440,6 @@ augroup reload_vimrc_once
 
     "autocmd!这一句将会清除之前的 事件和响应动作
     "保存vimrc文件之时，先把文件拷贝覆盖一份给my-vimrc-file目录， 执行vim脚本
-    autocmd BufWritePost $MYVIMRC silent write! ~\my-vimrc-file\.vimrc | source $MYVIMRC
+    autocmd BufWritePost $MYVIMRC source $MYVIMRC
     "只能这样写(source vimrc命令必须放进一个依赖保存事件触发的自动命令，不然就无穷递归了)
 augroup END
