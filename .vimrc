@@ -911,7 +911,7 @@ autocmd FileType vimwiki setlocal shiftwidth=4 tabstop=4 noexpandtab
     \ "cpp": v:true,
     \ }
 
-" 启动的时候 提供的一些辅助功能，比如显示最近打开文件,以及一个好看的图标。
+" 只启动vim(未指定文件名)的时候 提供的一些辅助功能，比如显示最近打开文件,以及一个好看的图标。开箱即用。
 Plug 'mhinz/vim-startify'
 
 " 您正在编辑的文件是否受版本控制？Signify 只显示对版本控制文件的更改。显示实时diff
@@ -923,6 +923,10 @@ endif
 
 " default updatetime 4000ms is not good for async update
 set updatetime=100
+
+"撤销树, vim的撤销记录未必是线性(堆栈)，而是一棵树。所以可以找回一些分支。
+Plug 'mbbill/undotree'
+"用法是： UndotreeToggle
 
 call plug#end()
 
