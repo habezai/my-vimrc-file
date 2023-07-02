@@ -1437,7 +1437,6 @@ highlight lspInlayHintsType ctermfg=red guifg=#006666
 "
 augroup reload_vimrc_once
     autocmd!  
-
     "autocmd!这一句将会清除之前的 事件和响应动作
     "保存vimrc文件之时，先把文件拷贝覆盖一份给my-vimrc-file目录， 执行vim脚本
     autocmd BufWritePost $MYVIMRC source $MYVIMRC
