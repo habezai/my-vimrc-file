@@ -927,6 +927,18 @@ set updatetime=100
 "撤销树, vim的撤销记录未必是线性(堆栈)，而是一棵树。所以可以找回一些分支。
 Plug 'mbbill/undotree'
 "用法是： UndotreeToggle
+if has("persistent_undo")
+   let target_path = expand('~/.undodir')
+
+    " create the directory and any parent directories
+    " if the location does not exist.
+    if !isdirectory(target_path)
+        call mkdir(target_path, "p", 0700)
+    endif
+
+    let &undodir=target_path
+    set undofile
+endif
 
 call plug#end()
 
