@@ -36,18 +36,41 @@ endfunction
 function! s:RunVimwiki() abort
     execute "w"
     execute ":VimwikiAll2HTML"
-    let l:curPath=expand("%:p:h")
-    let l:newPath=l:curPath.'_html'
+    let l:curPath=expand("%:p:h") 
+    let l:curFile=expand("%:r")
+
+    let l:newPath=l:curPath.'_html/'
+
+    " 切换到html目录, 当前工作目录 变化
     call chdir(l:newPath)
 
-    if filereadable(expand("%:r") . ".vim") 
-        execute 'source ' . expand("%:r") . ".vim" 
-    elseif filereadable(expand("index") . ".vim") 
-        execute 'source ' . expand("index") . ".vim" 
+    if filereadable( l:newPath . l:curFile . ".html")   "(当前工作目录)有同名的html
+
+        "开始编辑html, 隐藏当前缓冲区
+        execute 'vsplit ' . l:newPath . l:curFile . ".html "
+
+        if filereadable("must.vim")  "有must.vim
+            execute 'source ' . "must.vim"
+        endif
+
+        if filereadable( l:newPath . l:curFile . ".vim")   "有同名的vim脚本
+            execute 'source ' . l:newPath . l:curFile . ".vim" 
+        endif
+
+        q "退出窗口
+
+        call feedkeys("\<CR>")
+
+        " 画面中央弹出弹窗，显示消息，移动光标就关闭弹窗
+        let options = { 
+                    \ 'highlight': 'WarningMsg',
+                    \ 'moved':"any",
+                    \ 'border':[3,3,3,3],
+                    \ }
+        let popup_id = popup_create('highlight.js替换成功!', options)
+
     endif
 
-    " 进入编辑，利用autocmd来修改这个html
-    " execute 'edit '.l:newPath.'\'.expand("%:t:r").'.html'
 endfunction
 
 function! s:RunDosBatch() abort
@@ -174,7 +197,7 @@ nnoremap <leader>cb <Plug>VimwikiToggleListItem
 " "C"hange "V"imrc"的首字母,新建tab，打开.vimrc进行编辑
 nnoremap <leader>cv :tabnew $MYVIMRC<cr>
 " "C"opy 使用 ;c 来对选中的文字进行 赋值到系统粘贴寄存器
-vnoremap <leader>c "+y
+vnoremap <leader>c "*y
 " "E"xecute 按分号e编译运行代码 (Windows生成exe)
 nnoremap <Leader>e :call CompileRunGcc()<CR>
 "<leader>m  打开临时文件 main.cpp
@@ -230,8 +253,8 @@ function! g:Ctag() abort
         silent execute ":!ctags -R --c++-kinds=+p+x+d --fields=+liaS --extras=+q --exclude={paralell}" 
     endif
 endfunction
-" 使用;v快捷键粘贴 "+" 寄存器内容---也就是 Win系统粘贴板
-nnoremap <Leader>v "+p 
+" 使用;v快捷键粘贴 `*` 寄存器内容---也就是 Win系统粘贴板
+nnoremap <Leader>v "*p 
 " 使用;w快捷键保存内容
 nnoremap <Leader>w :w<CR>
 "H设置为行首，L设置为行尾
@@ -598,7 +621,7 @@ augroup javascript__
 augroup END
 augroup html__
   autocmd!
-  autocmd BufReadPost *.html  if filereadable(expand("%:r") . ".vim") | execute 'source ' . expand("%:r") . ".vim" | elseif filereadable(expand("index") . ".vim") | execute 'source ' . expand("index") . ".vim" | endif
+  " autocmd BufReadPost *.html  if filereadable(expand("%:r") . ".vim") | execute 'source ' . expand("%:r") . ".vim" | elseif filereadable("must.vim") | execute "source must.vim" | endif
 augroup END
 augroup shell_
     autocmd!
@@ -866,7 +889,6 @@ Plug 'prabirshrestha/vim-lsp'
 Plug 'prabirshrestha/asyncomplete.vim'
 "asyncomplete-lsp 将 lsp 中的内容交给 asyncomplete 做补全。---没有文档
 Plug 'prabirshrestha/asyncomplete-lsp.vim'
-call plug#end()
 "----------------------------------------
 " 大名鼎鼎的vimwiki
 Plug 'vimwiki/vimwiki'
@@ -879,7 +901,31 @@ let g:vimwiki_list = [
             \ ]
 autocmd FileType vimwiki setlocal shiftwidth=4 tabstop=4 noexpandtab
 " codeium 代码智能提示，Copilot 替代品
-" Plug 'Exafunction/codeium.vim'
+"Plug 'Exafunction/codeium.vim'
+
+" 设置开启codeium的文件类型,未写进去的默认关闭
+ let g:codeium_filetypes = {
+    \ "vim": v:false,
+    \ "bash": v:false,
+    \ "typescript": v:true,
+    \ "cpp": v:true,
+    \ }
+
+" 启动的时候 提供的一些辅助功能，比如显示最近打开文件,以及一个好看的图标。
+Plug 'mhinz/vim-startify'
+
+" 您正在编辑的文件是否受版本控制？Signify 只显示对版本控制文件的更改。显示实时diff
+if has('nvim') || has('patch-8.0.902')
+  Plug 'mhinz/vim-signify'
+else
+  Plug 'mhinz/vim-signify', { 'tag': 'legacy' }
+endif
+
+" default updatetime 4000ms is not good for async update
+set updatetime=100
+
+call plug#end()
+
 "----------------------------------------
 "状态 :PlugStatus 检查现在 plug 负责的插件状态
 "安装 :PlugInstall 将写入vimrc配置的插件进行安装
@@ -1391,6 +1437,7 @@ highlight lspInlayHintsType ctermfg=red guifg=#006666
 "
 augroup reload_vimrc_once
     autocmd!  
+
     "autocmd!这一句将会清除之前的 事件和响应动作
     "保存vimrc文件之时，先把文件拷贝覆盖一份给my-vimrc-file目录， 执行vim脚本
     autocmd BufWritePost $MYVIMRC silent write! ~\my-vimrc-file\.vimrc | source $MYVIMRC
