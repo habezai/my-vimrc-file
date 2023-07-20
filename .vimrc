@@ -104,16 +104,15 @@ if(g:isGUI)
     endfunction
     "Gvim行距 linespace
     set linespace=4
-    if !exists("g:myflag_colorscheme")
-        " 在这里编写您希望只使用一次的配置
-        colorscheme motus
-        " 将变量 myflag_colorscheme 设置为已存在，避免重复执行
-        let g:myflag_colorscheme = 1
+
+    if ( &filetype != 'vim' )
+        colorscheme wwdc16 "motus 或者 gruvbox8_hard  或者 wwdc16
     endif
+
     "BufNewFile创建新的txt文件的时候， BufReadPost打开已有txt文件之后
     autocmd BufNewFile,BufReadPost *.txt setlocal linespace=10
     autocmd BufLeave *.txt setlocal linespace=4
-    set guifont=Cr.DejaVuSansMono.YaHei:h13
+    set guifont=Cr.DejaVuSansMono.YaHei:h15
 else
     "终端vim下的配置
     " 判断变量 myflag 是否存在
@@ -224,7 +223,9 @@ nnoremap <Leader>q :q<CR>
 " 使用;;q强制退出vim
 nnoremap <Leader><Leader>q <esc>:q!<CR>
 " 窗口切换  
+" ctrl+h 切换到左边
 nnoremap <c-h> <c-w>h  
+" ctrl+l 切换到右边
 nnoremap <c-l> <c-w>l  
 nnoremap <c-j> <c-w>j  
 nnoremap <c-k> <c-w>k  
@@ -361,7 +362,7 @@ set dictionary+=/usr/share/dict/english.dict
 set complete-=k complete+=k
 set autoread            "打开文件监视。如果在编辑过程中文件发生外部改变（比如被别的编辑器编辑了），就会发出提示。
 set timeoutlen=500      "以毫秒计的,等待键码或映射的键序列完成的时间;
-set backspace=2         "相当于set backspace=indent,eol,start
+set backspace=indent,eol,start "设置退格键盘能删除的隐藏符号(indent和eol是符号，start是特殊位置)。 详情参见:help options
 "}}}
 " < Status Line > {{{
 " -----------------------------------------------------------------------------
@@ -633,7 +634,12 @@ augroup asm__
     "设定 手动折叠的标记
     autocmd FileType asm setlocal foldmethod=marker | setlocal foldmarker=;<,;>
 augroup END
-
+"vim的帮助文档类型
+augroup help__
+    autocmd!
+    "让 横杠不成为分词依据(为了链接跳转可以直接使用K和ctrl+])
+    autocmd FileType help setlocal iskeyword+=-
+augroup END
 " }}}
 " < Vimscript file settings > {{{
 " -----------------------------------------------------------------------------
@@ -642,6 +648,7 @@ augroup vim__
     "打开文件时全部折叠
     autocmd BufReadPost .vimrc setlocal foldlevelstart=0 
     autocmd filetype vim call s:VimSettings()
+    "colorscheme motus | 
     function! s:VimSettings() abort
         "设置折叠方式为手动标记
         setlocal foldmethod=marker
@@ -920,9 +927,40 @@ if has('nvim') || has('patch-8.0.902')
 else
   Plug 'mhinz/vim-signify', { 'tag': 'legacy' }
 endif
-
 " default updatetime 4000ms is not good for async update
 set updatetime=100
+" 为Signify这个插件设置一些右键菜单
+if (isGUI)
+    if &mousemodel =~? 'popup'
+        " amenu菜单 all-mode menu的意思。 好像这样加的菜单，在i,n,v模式都能调出
+        " 至于1.10是什么，前面是让菜单优先级，后面是子菜单优先级,参见：help menu-priority
+        anoremenu 1.1  PopUp.@signify查看diff信息.折叠未产生\ diff\ 信息的区域<tab>(:SignifyFold)
+                    \ :SignifyFold<CR>
+        anoremenu 1.2  PopUp.@signify查看diff信息.查看本行diff<tab>(:SignifyHunkDiff)
+                    \ :SignifyHunkDiff<CR>
+        anoremenu 1.3 PopUp.@signify查看diff信息.撤销本行修改<tab>(:SignifyHunkUndo)
+                    \ :SignifyHunkUndo<CR>
+        "anoremenu 1.4 PopUp.-Sep1- \ <Nop>
+        anoremenu 1.5 PopUp.@signify查看diff信息.开启vimdiff模式(右侧出现本文件)<tab>(:SignifyDiff)
+                    \ :SignifyDiff<CR>
+        anoremenu 1.100 PopUp.-Sep- \ <Nop>
+        anoremenu 1.110 PopUp.查看光标下元素的语法名称
+                    \ :echo "语法: ".synIDattr(synID(line("."),col("."),v:true),"name")<CR>
+        anoremenu 1.120 PopUp.查看光标下元素的语法highlight\ group
+                    \ :execute 'highlight '.synIDattr(synID(line("."),col("."),v:true),"name")<CR>
+    endif
+endif
+
+" Vim 配色方案设计师的工具包！ 放进 pack 的 start " Plug 'lifepillar/vim-colortemplate'
+
+" 配色方案 Gruvbox8
+"Plug 'lifepillar/vim-gruvbox8'， 移入pack的opt
+
+" colorscheme gruvbox8_hard(对比度硬) 或者 gruvbox8_soft(对比度柔) 或者 gruvbox8（中等）
+"不使用斜体
+let g:gruvbox_italics = 0
+"字符串也不用斜体
+let g:gruvbox_italicize_strings = 0
 
 "撤销树, vim的撤销记录未必是线性(堆栈)，而是一棵树。所以可以找回一些分支。
 Plug 'mbbill/undotree'
@@ -1336,7 +1374,7 @@ function! s:on_lsp_buffer_enabled() abort
     nmap <buffer> ]g <plug>(lsp-next-diagnostic)
     "    nmap <buffer> gi <plug>(lsp-implementation)
     "    nmap <buffer> gt <plug>(lsp-type-definition)
-    "K 召唤浮窗, 显示函数说明/或者变量原型/函数原型
+    "K 召唤浮窗,说明细节, 显示函数说明/或者变量原型/函数原型
     nmap <buffer> K <plug>(lsp-hover)
     "浮窗中的翻页 往后4行
     nnoremap <buffer> <expr><c-f> lsp#scroll(+4)
@@ -1436,19 +1474,37 @@ let g:UltiSnipsJumpBackwardTrigger="<c-k>"
 "{{{
 " -----------------------------------------------------------------------------
 "文本中的 引用高亮
-highlight lspReference ctermfg=red guifg=#000000 ctermbg=green guibg=Grey
-"文本中的错误高亮，不是左侧边栏的
-highlight link LspErrorHighlight Error
-highlight link LspErrorVirtualText Error
-"文本中的警告高亮，不是左侧边栏的
-highlight link LspWarningHighlight TODO
-highlight link LspWarningVirtualText TODO
-"文本中的inlay提示（函数参数）
-highlight lspInlayHintsParameter ctermfg=red guifg=#666666
-            \ ctermbg=green guibg=Black
-"文本中的inlay提示（类型）
-highlight lspInlayHintsType ctermfg=red guifg=#006666
-            \ ctermbg=green guibg=Black
+func! OnColorschemeChange() abort
+
+    "引用的内容, 灰底白字
+    highlight lspReference ctermfg=red guifg=#000000 ctermbg=green guibg=Grey
+
+    "文本中的错误高亮，不是左侧边栏(sign column)的。
+    highlight LspErrorHighlight guifg=#ffffff guibg=#d44848 gui=bold,underline
+    "   虚文本的。
+    highlight link LspErrorVirtualText Error
+    "   符号列的
+    highlight link LspErrorText Error
+
+    "文本中的警告高亮，不是左侧边栏(sign column)的
+    highlight LspWarningHighlight guifg=#002fa7 guibg=#fbd26a gui=bold,underline
+    "   虚文本的。
+    highlight link LspWarningVirtualText Todo
+    "   符号列的
+    highlight link LspWarningText Todo
+
+    "文本中的inlay提示（函数参数）
+    highlight lspInlayHintsParameter guifg=#949494 guibg=#292c36 gui=italic
+    "文本中的inlay提示（类型）
+    highlight lspInlayHintsType guifg=#949494 guibg=#292c36 gui=italic
+endfunc
+"启动时，加载一次。
+call OnColorschemeChange()
+"之后，每改换一次颜色主题就加载一次
+augroup highlightthings__
+    autocmd!  
+    autocmd ColorScheme * call OnColorschemeChange()
+augroup END
 "}}}
 "
 augroup reload_vimrc_once
@@ -1458,3 +1514,4 @@ augroup reload_vimrc_once
     autocmd BufWritePost $MYVIMRC source $MYVIMRC
     "只能这样写(source vimrc命令必须放进一个依赖保存事件触发的自动命令，不然就无穷递归了)
 augroup END
+
